@@ -22,9 +22,10 @@ func writeMtlFile(filename string) os.Error {
 		return outErr
 	}
 	defer outFile.Close()
-
-	for _, color := range colors {
-		color.Print(outFile)
+	for _, blockType := range blockTypeMap {
+		for _, color := range blockType.colors {
+			color.Print(outFile)
+		}
 	}
 
 	return nil
@@ -123,20 +124,8 @@ func (mtl *MTL) colorId() uint16 {
 	return id
 }
 
-func init() {
-	colors = make([]MTL, 256)
-	for i, _ := range colors {
-		colors[i] = MTL{byte(i), 255, 0x7f7f7f, "Unknown", NullTexCoord(), NullTexCoord(), NullTexCoord(), NullTexCoord()}
-	}
-
-	extraData = make(map[byte]bool)
-}
-
 var (
-	extraData map[byte]bool
-
-	colors []MTL
-
+	defaultMTL    = MTL{0, 255, 0x7f7f7f, "Unknown", NullTexCoord(), NullTexCoord(), NullTexCoord(), NullTexCoord()}
 	MaterialNamer BlockIdNamer
 )
 
@@ -148,11 +137,21 @@ type NumberBlockIdNamer struct{}
 
 func (n *NumberBlockIdNamer) NameBlockId(blockId uint16) (name string) {
 	var idByte = byte(blockId & 0xff)
-	var extraValue, extraPresent = extraData[idByte]
-	if extraValue && extraPresent {
-		name = fmt.Sprintf("%d_%d", idByte, blockId>>8)
-	} else {
-		name = fmt.Sprintf("%d", idByte)
+	name = fmt.Sprintf("%d", idByte)
+	defaultName := name
+
+	if blockType, ok := blockTypeMap[idByte]; ok {
+		for i, mtl := range blockType.colors {
+			if i == 0 || mtl.metadata == uint8(blockId>>8) {
+				name = fmt.Sprintf("%d_%d", idByte, (blockId >> 8))
+			}
+			if mtl.metadata == uint8(blockId>>8) {
+				return
+			}
+			if mtl.metadata == 255 {
+				name = defaultName
+			}
+		}
 	}
 	return
 }
@@ -160,18 +159,15 @@ func (n *NumberBlockIdNamer) NameBlockId(blockId uint16) (name string) {
 type NameBlockIdNamer struct{}
 
 func (n *NameBlockIdNamer) NameBlockId(blockId uint16) (name string) {
+	name = defaultMTL.name
 	var idByte = byte(blockId & 0xff)
-	var extraValue, extraPresent = extraData[idByte]
-	if extraValue && extraPresent {
-		for _, color := range colors {
-			if color.blockId == idByte && color.metadata == uint8(blockId>>8) {
-				return color.name
+	if blockType, ok := blockTypeMap[idByte]; ok {
+		for i, color := range blockType.colors {
+			if i == 0 || color.blockId == idByte && (color.metadata == 255 || color.metadata == uint8(blockId>>8)) {
+				name = color.name
 			}
-		}
-	} else {
-		for _, color := range colors {
-			if color.blockId == idByte {
-				return color.name
+			if color.blockId == idByte && color.metadata == uint8(blockId>>8) {
+				return
 			}
 		}
 	}
