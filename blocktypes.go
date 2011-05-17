@@ -87,6 +87,20 @@ type BlockType struct {
 	colors       []MTL
 }
 
+func (b BlockType) findMaterial(blockId uint16) (retval MTL) {
+	retval = defaultMTL
+	for i, m := range b.colors {
+		perfectMatch := m.metadata == uint8(blockId>>8)
+		if i == 0 || m.metadata == 255 || perfectMatch {
+			retval = m
+		}
+		if perfectMatch {
+			return
+		}
+	}
+	return
+}
+
 
 type Transparency bool
 type SingularOrAggregate bool
@@ -120,6 +134,7 @@ func (b BlockInfoByte) IsTransparent() bool {
 func (b BlockInfoByte) IsEmpty() bool {
 	return b&4 != 0
 }
+
 
 func init() {
 	blockTypeMap = make(map[byte]*BlockType)
