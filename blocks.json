@@ -105,7 +105,7 @@
 {"blockId": 83, "color": "#83c447",   "name": "SugarCane",                                   "item": true       , "sideTex":[[9,4],[10,5]]},
 {"blockId": 84, "color": "#6b4937",   "name": "Jukebox"                                                         , "tex":[[10,4],[11,5]],"topTex":[[11,4],[12,5]],"botTex":[[11,4],[12,5]]},
 {"blockId": 85, "color": "#9d804f",   "name": "Fence",                                       "item": true       , "tex":[[4,0],[5,1]],"fixme":"geometry"},
-{"blockId": 86, "color": "#c57918",   "name": "Pumpkin"                                                         , "tex":[[6,7],[8,8]],"topTex":[[6,6],[7,7]],"botTex":[[6,6],[7,7]]},
+{"blockId": 86, "color": "#c57918",   "name": "Pumpkin"                                                         , "tex":[[6,7],[7,8]],"sideTex":[[7,7],[8,8]],"topTex":[[6,6],[7,7]],"botTex":[[6,6],[7,7]]},
 {"blockId": 87, "color": "#6e3533",   "name": "Netherrack"                                                      , "tex":[[7,6],[8,7]]},
 {"blockId": 88, "color": "#554134",   "name": "SoulSand"                                                        , "tex":[[8,6],[9,7]]},
 {"blockId": 89, "color": "#897141",   "name": "Glowstone"                                                       , "tex":[[9,6],[10,7]]},
