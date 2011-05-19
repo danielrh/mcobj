@@ -53,7 +53,7 @@ type Face struct {
 func crossProductTop(v1, v2, v3 Vertex) bool {
 	a := v2.sub(v1)
 	b := v3.sub(v1)
-	return (a.z*b.x - a.x*b.z) > 0
+	return (a.z*b.x - a.x*b.z) < 0
 }
 
 func (fs *Faces) AddFace(blockId uint16, v1, v2, v3, v4 Vertex) {
@@ -73,7 +73,7 @@ func (fs *Faces) AddFace(blockId uint16, v1, v2, v3, v4 Vertex) {
 			tc = mtl.frontTex
 		}
 	}
-	var face = Face{blockId, [4]int{fs.vertexes.Use(v1), fs.vertexes.Use(v2), fs.vertexes.Use(v3), fs.vertexes.Use(v4)}, [4]int{fs.texcoords.Use(tc, false, false, 0), fs.texcoords.Use(tc, true, false, 0), fs.texcoords.Use(tc, true, true, 0), fs.texcoords.Use(tc, false, true, 0)}}
+	var face = Face{blockId, [4]int{fs.vertexes.Use(v1), fs.vertexes.Use(v2), fs.vertexes.Use(v3), fs.vertexes.Use(v4)}, [4]int{fs.texcoords.Use(tc, true, true, 0), fs.texcoords.Use(tc, false, true, 0), fs.texcoords.Use(tc, false, false, 0), fs.texcoords.Use(tc, true, false, 0)}}
 	fs.faces = append(fs.faces, face)
 }
 
@@ -237,10 +237,10 @@ func (tcs *TexCoords) Print(w io.Writer, imageWidth int, imageHeight int) (count
 	copy(buf[0:3], "vt ")
 	patternWidth := (imageWidth / numBlockPatternsAcross)
 	count = 0
-	for i := 0; i < numBlockPatternsAcross; i++ {
-		for j := 0; j < numBlockPatternsAcross; j++ {
-			for isub := 0; isub < 2; isub++ {
-				for jsub := 0; jsub < 2; jsub++ {
+	for j := 0; j < numBlockPatternsAcross; j++ {
+		for jsub := 0; jsub < 2; jsub++ {
+			for i := 0; i < numBlockPatternsAcross; i++ {
+				for isub := 0; isub < 2; isub++ {
 					xPixel := i*patternWidth + isub*(patternWidth-1)
 					yPixel := j*patternWidth + jsub*(patternWidth-1)
 					index := i*2 + isub + (j*2+jsub)*numBlockPatternsAcross*2
@@ -429,17 +429,12 @@ func (r *blockRun) AddFace(faces AddFacer) {
 	}
 }
 
-func (r *blockRun) Update(faces AddFacer, nr *blockRun, flag bool) {
+func (r *blockRun) Update(faces AddFacer, nr *blockRun) {
 	if !blockFaces {
 		if r.dirty {
 			if nr.blockId == r.blockId {
-				if flag {
-					r.v3 = nr.v3
-					r.v4 = nr.v4
-				} else {
-					r.v2 = nr.v2
-					r.v3 = nr.v3
-				}
+				r.v3 = nr.v3
+				r.v4 = nr.v4
 			} else {
 				r.AddFace(faces)
 				*r = *nr
@@ -474,25 +469,25 @@ func (fs *Faces) processBlocks(enclosedChunk *EnclosedChunk, faces AddFacer) {
 			}
 
 			if fs.boundary.IsBoundary(blockId, enclosedChunk.Get(x-1, y, z)) {
-				r1.Update(faces, &blockRun{blockId, Vertex{x, y, z}, Vertex{x, y, z + 1}, Vertex{x, y + 1, z + 1}, Vertex{x, y + 1, z}, true}, true)
+				r1.Update(faces, &blockRun{blockId, Vertex{x, y, z}, Vertex{x, y, z + 1}, Vertex{x, y + 1, z + 1}, Vertex{x, y + 1, z}, true})
 			} else {
 				r1.AddFace(faces)
 			}
 
 			if fs.boundary.IsBoundary(blockId, enclosedChunk.Get(x+1, y, z)) {
-				r2.Update(faces, &blockRun{blockId, Vertex{x + 1, y, z}, Vertex{x + 1, y + 1, z}, Vertex{x + 1, y + 1, z + 1}, Vertex{x + 1, y, z + 1}, true}, false)
+				r2.Update(faces, &blockRun{blockId, Vertex{x + 1, y, z + 1}, Vertex{x + 1, y, z}, Vertex{x + 1, y + 1, z}, Vertex{x + 1, y + 1, z + 1}, true})
 			} else {
 				r2.AddFace(faces)
 			}
 
 			if fs.boundary.IsBoundary(blockId, enclosedChunk.Get(x, y, z-1)) {
-				r3.Update(faces, &blockRun{blockId, Vertex{x, y, z}, Vertex{x, y + 1, z}, Vertex{x + 1, y + 1, z}, Vertex{x + 1, y, z}, true}, false)
+				r3.Update(faces, &blockRun{blockId, Vertex{x + 1, y, z}, Vertex{x, y, z}, Vertex{x, y + 1, z}, Vertex{x + 1, y + 1, z}, true})
 			} else {
 				r3.AddFace(faces)
 			}
 
 			if fs.boundary.IsBoundary(blockId, enclosedChunk.Get(x, y, z+1)) {
-				r4.Update(faces, &blockRun{blockId, Vertex{x, y, z + 1}, Vertex{x + 1, y, z + 1}, Vertex{x + 1, y + 1, z + 1}, Vertex{x, y + 1, z + 1}, true}, true)
+				r4.Update(faces, &blockRun{blockId, Vertex{x, y, z + 1}, Vertex{x + 1, y, z + 1}, Vertex{x + 1, y + 1, z + 1}, Vertex{x, y + 1, z + 1}, true})
 			} else {
 				r4.AddFace(faces)
 			}
