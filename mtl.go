@@ -95,14 +95,17 @@ func (t TexCoord) vertex(i int) Vec2 {
 
 
 type MTL struct {
-	blockId  byte
-	metadata byte
-	color    uint32
-	name     string
-	sideTex  TexCoord
-	frontTex TexCoord
-	topTex   TexCoord
-	botTex   TexCoord
+	blockId              byte
+	metadata             byte
+	color                uint32
+	name                 string
+	repeatingTextureName string //which texture holds the repeating block
+	repeatingSideOffset  int    // what offset the item is
+	repeatingFrontOffset int    // what offset the item is
+	sideTex              TexCoord
+	frontTex             TexCoord
+	topTex               TexCoord
+	botTex               TexCoord
 }
 
 func (mtl *MTL) Print(w io.Writer) {
@@ -125,7 +128,7 @@ func (mtl *MTL) colorId() uint16 {
 }
 
 var (
-	defaultMTL    = MTL{0, 255, 0x7f7f7f, "Unknown", NullTexCoord(), NullTexCoord(), NullTexCoord(), NullTexCoord()}
+	defaultMTL    = MTL{0, 255, 0x7f7f7f, "Unknown", "", 0, 0, NullTexCoord(), NullTexCoord(), NullTexCoord(), NullTexCoord()}
 	MaterialNamer BlockIdNamer
 )
 

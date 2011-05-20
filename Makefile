@@ -3,6 +3,7 @@ include $(GOROOT)/src/Make.inc
 TARG=mcobj
 GOFILES=\
 	mcobj.go\
+	texture.go\
 	version.go\
 	obj.go\
 	mtl.go\
