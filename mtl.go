@@ -100,8 +100,8 @@ type MTL struct {
 	color                uint32
 	name                 string
 	repeatingTextureName string //which texture holds the repeating block
-	repeatingSideOffset  int    // what offset the item is
-	repeatingFrontOffset int    // what offset the item is
+	repeatingSideOffset  TexCoord
+	repeatingFrontOffset TexCoord
 	sideTex              TexCoord
 	frontTex             TexCoord
 	topTex               TexCoord
@@ -130,7 +130,7 @@ func (mtl *MTL) colorId() uint16 {
 }
 
 var (
-	defaultMTL    = MTL{0, 255, 0x7f7f7f, "Unknown", "", 0, 0, NullTexCoord(), NullTexCoord(), NullTexCoord(), NullTexCoord()}
+	defaultMTL    = MTL{0, 255, 0x7f7f7f, "Unknown", "", NullTexCoord(), NullTexCoord(), NullTexCoord(), NullTexCoord(), NullTexCoord(), NullTexCoord()}
 	MaterialNamer BlockIdNamer
 )
 
