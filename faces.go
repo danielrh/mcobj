@@ -108,9 +108,18 @@ func (fs *Faces) Write(w io.Writer) {
 	}
 
 	for _, blockId := range blockIds {
-		printMtl(w, blockId)
+		printMtl(w, blockId, false)
+		wroteRepeatingTexcoords := false
+
 		for _, face := range fs.faces {
 			if face.blockId == blockId {
+				writingRepeatingTexcoords := face.texIndexes[0] >= numNonrepeatingTexcoords
+
+				if writingRepeatingTexcoords != wroteRepeatingTexcoords {
+					printMtl(w, blockId, writingRepeatingTexcoords)
+					wroteRepeatingTexcoords = writingRepeatingTexcoords
+				}
+
 				fmt.Fprintf(w, "f %d/%d %d/%d %d/%d %d/%d\n", fs.vertexes.Get(face.indexes[0])-vc-1, fs.texcoords.Get(face.texIndexes[0])-tc-1, fs.vertexes.Get(face.indexes[1])-vc-1, fs.texcoords.Get(face.texIndexes[1])-tc-1, fs.vertexes.Get(face.indexes[2])-vc-1, fs.texcoords.Get(face.texIndexes[2])-tc-1, fs.vertexes.Get(face.indexes[3])-vc-1, fs.texcoords.Get(face.texIndexes[3])-tc-1)
 				faceCount++
 			}
@@ -162,7 +171,7 @@ func (vs *Vertexes) Number() {
 const numBlockPatternsAcross = 16
 const numBlockPatterns = numBlockPatternsAcross * numBlockPatternsAcross
 const numNonrepeatingTexcoordsAcross = numBlockPatternsAcross * 2
-const numNonrepeatingTexcoords = numBlockPatternsAcross * numBlockPatternsAcross
+const numNonrepeatingTexcoords = numNonrepeatingTexcoordsAcross * numNonrepeatingTexcoordsAcross
 
 const numRepeatingPatternsAcross = 64
 const numRepeatingTexcoordsAcross = numRepeatingPatternsAcross * 2
@@ -276,8 +285,8 @@ func (tcs *TexCoords) Print(w io.Writer, imageWidth int, imageHeight int) (count
 	}
 	repeatingImageWidth := imageWidth / numBlockPatternsAcross * numRepeatingPatternsAcross
 	repeatingImageHeight := imageWidth / numBlockPatternsAcross
-	for i := 0; i < numRepeatingPatternsAcross; i++ {
-		for j := 0; j < maxDepth; j++ {
+	for j := 0; j < maxDepth; j++ {
+		for i := 0; i < numRepeatingPatternsAcross; i++ {
 			for isub := 0; isub < 2; isub++ {
 				xPixel := i*patternWidth + isub*(patternWidth-1)
 				yPixel := j*patternWidth + (patternWidth - 1)
