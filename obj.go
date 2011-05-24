@@ -20,7 +20,7 @@ type ObjGenerator struct {
 	out     *bufio.Writer
 }
 
-func (o *ObjGenerator) Start(outFilename string, total int, maxProcs int, boundary *BoundaryLocator) {
+func (o *ObjGenerator) Start(outFilename string, total int, maxProcs int, boundary *BoundaryLocator, imageWidth int, imageHeight int) {
 	o.enclosedsChan = make(chan *EnclosedChunkJob, maxProcs*2)
 	o.writeFacesChan = make(chan *WriteFacesJob, maxProcs*2)
 	o.completeChan = make(chan bool)
@@ -43,7 +43,7 @@ func (o *ObjGenerator) Start(outFilename string, total int, maxProcs int, bounda
 					b = &MemoryWriter{make([]byte, 0, 128*1024)}
 				}
 
-				var faceCount = faces.ProcessChunk(job.enclosed, b)
+				var faceCount = faces.ProcessChunk(job.enclosed, b, imageWidth, imageHeight)
 				fmt.Fprintln(b)
 
 				o.writeFacesChan <- &WriteFacesJob{job.enclosed.xPos, job.enclosed.zPos, faceCount, b, job.last}

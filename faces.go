@@ -16,10 +16,10 @@ type Faces struct {
 	boundary  *BoundaryLocator
 }
 
-func (fs *Faces) ProcessChunk(enclosed *EnclosedChunk, w io.Writer) (count int) {
+func (fs *Faces) ProcessChunk(enclosed *EnclosedChunk, w io.Writer, imageWidth int, imageHeight int) (count int) {
 	fs.Clean(enclosed.xPos, enclosed.zPos)
 	fs.processBlocks(enclosed, fs)
-	fs.Write(w)
+	fs.Write(w, imageWidth, imageHeight)
 	return len(fs.faces)
 }
 
@@ -87,11 +87,11 @@ func (fs *Faces) AddFace(blockId uint16, v1, v2, v3, v4 Vertex) {
 	fs.faces = append(fs.faces, face)
 }
 
-func (fs *Faces) Write(w io.Writer) {
+func (fs *Faces) Write(w io.Writer, imageWidth int, imageHeight int) {
 	fs.vertexes.Number()
 	var vc = int16(fs.vertexes.Print(w, fs.xPos, fs.zPos))
 	fs.texcoords.Number()
-	var tc = int16(fs.texcoords.Print(w, 1024, 1024))
+	var tc = int16(fs.texcoords.Print(w, imageWidth, imageHeight))
 	var blockIds = make([]uint16, 0, 16)
 	for _, face := range fs.faces {
 		var found = false
@@ -266,8 +266,8 @@ func (tcs *TexCoords) Print(w io.Writer, imageWidth int, imageHeight int) (count
 					index := i*2 + isub + (j*2+jsub)*numBlockPatternsAcross*2
 					if (*tcs)[index] != -1 {
 						count++
-						xCoord := float64(xPixel) / float64(imageWidth-1)
-						yCoord := 1 - float64(yPixel)/float64(imageHeight-1)
+						xCoord := (float64(xPixel) + .5) / float64(imageWidth)
+						yCoord := 1 - (float64(yPixel)+.5)/float64(imageHeight)
 						buf = buf[:3]
 						if xCoord == xCoord {
 							buf = appendFloat(buf, xCoord)
@@ -296,8 +296,8 @@ func (tcs *TexCoords) Print(w io.Writer, imageWidth int, imageHeight int) (count
 				index := i*2 + isub + j*numRepeatingPatternsAcross*2 + numNonrepeatingTexcoords
 				if (*tcs)[index] != -1 {
 					count++
-					xCoord := float64(xPixel) / float64(repeatingImageWidth-1)
-					yCoord := 1 - float64(yPixel)/float64(repeatingImageHeight-1)
+					xCoord := (float64(xPixel) + .5) / float64(repeatingImageWidth)
+					yCoord := 1 - (float64(yPixel)+.5)/float64(repeatingImageHeight)
 					buf = buf[:3]
 					buf = appendFloat(buf, xCoord)
 					buf = append(buf, ' ')

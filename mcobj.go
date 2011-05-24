@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/png"
 	"bufio"
 	"flag"
 	"fmt"
@@ -134,7 +135,8 @@ func main() {
 	if solidSides {
 		defaultSide = &emptySide
 	}
-
+	var imageWidth int
+	var imageHeight int
 	{
 		var dir, _ = filepath.Split(strings.Replace(os.Args[0], "\\", "/", -1))
 		var jsonError = loadBlockTypesJson(filepath.Join(dir, "blocks.json"))
@@ -148,7 +150,13 @@ func main() {
 				fmt.Fprintln(os.Stderr, err)
 				return
 			}
-			var terrainImageError = extractTerrainImage(w, "repeating_terrain", blockTypeMap)
+			var img, fileErr = png.Decode(w)
+			if fileErr != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+			imageWidth = img.Bounds().Dx()
+			imageHeight = img.Bounds().Dy()
+			var terrainImageError = extractTerrainImage(img, "repeating_terrain", blockTypeMap)
 			w.Close()
 			if terrainImageError != nil {
 				fmt.Fprintln(os.Stderr, jsonError)
@@ -183,7 +191,7 @@ func main() {
 		}
 		var boundary = new(BoundaryLocator)
 		boundary.Init()
-		generator.Start(outFilename, pool.Remaining(), maxProcs, boundary)
+		generator.Start(outFilename, pool.Remaining(), maxProcs, boundary, imageWidth, imageHeight)
 
 		if walkEnclosedChunks(pool, world, cx, cz, generator.GetEnclosedJobsChan()) {
 			<-generator.GetCompleteChan()
@@ -194,7 +202,7 @@ func main() {
 }
 
 type OutputGenerator interface {
-	Start(outFilename string, total int, maxProcs int, boundary *BoundaryLocator)
+	Start(outFilename string, total int, maxProcs int, boundary *BoundaryLocator, imageWidth int, imageHeight int)
 	GetEnclosedJobsChan() chan *EnclosedChunkJob
 	GetCompleteChan() chan bool
 	Close()
