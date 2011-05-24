@@ -106,22 +106,22 @@ func (fs *Faces) Write(w io.Writer, imageWidth int, imageHeight int) {
 			blockIds = append(blockIds, face.blockId)
 		}
 	}
+	lastMTL := ""
+	for writeRepeatingTexcoords := 0; writeRepeatingTexcoords < 2; writeRepeatingTexcoords++ {
+		for _, blockId := range blockIds {
+			if lastMTL != getMtlName(blockId, writeRepeatingTexcoords != 0) {
+				lastMTL = printMtl(w, blockId, writeRepeatingTexcoords != 0)
+			}
+			for _, face := range fs.faces {
+				if face.blockId == blockId {
+					needsRepeatingTexcoords := face.texIndexes[0] >= numNonrepeatingTexcoords
 
-	for _, blockId := range blockIds {
-		printMtl(w, blockId, false)
-		wroteRepeatingTexcoords := false
+					if needsRepeatingTexcoords == (writeRepeatingTexcoords != 0) {
 
-		for _, face := range fs.faces {
-			if face.blockId == blockId {
-				writingRepeatingTexcoords := face.texIndexes[0] >= numNonrepeatingTexcoords
-
-				if writingRepeatingTexcoords != wroteRepeatingTexcoords {
-					printMtl(w, blockId, writingRepeatingTexcoords)
-					wroteRepeatingTexcoords = writingRepeatingTexcoords
+						fmt.Fprintf(w, "f %d/%d %d/%d %d/%d %d/%d\n", fs.vertexes.Get(face.indexes[0])-vc-1, fs.texcoords.Get(face.texIndexes[0])-tc-1, fs.vertexes.Get(face.indexes[1])-vc-1, fs.texcoords.Get(face.texIndexes[1])-tc-1, fs.vertexes.Get(face.indexes[2])-vc-1, fs.texcoords.Get(face.texIndexes[2])-tc-1, fs.vertexes.Get(face.indexes[3])-vc-1, fs.texcoords.Get(face.texIndexes[3])-tc-1)
+						faceCount++
+					}
 				}
-
-				fmt.Fprintf(w, "f %d/%d %d/%d %d/%d %d/%d\n", fs.vertexes.Get(face.indexes[0])-vc-1, fs.texcoords.Get(face.texIndexes[0])-tc-1, fs.vertexes.Get(face.indexes[1])-vc-1, fs.texcoords.Get(face.texIndexes[1])-tc-1, fs.vertexes.Get(face.indexes[2])-vc-1, fs.texcoords.Get(face.texIndexes[2])-tc-1, fs.vertexes.Get(face.indexes[3])-vc-1, fs.texcoords.Get(face.texIndexes[3])-tc-1)
-				faceCount++
 			}
 		}
 	}
