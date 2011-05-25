@@ -6,6 +6,7 @@ GOFILES=\
 	texture.go\
 	version.go\
 	obj.go\
+	objparse.go\
 	mtl.go\
 	faces.go\
 	prt.go\
