@@ -364,7 +364,7 @@ func (fs *Faces) Write(w io.Writer, vw io.Writer, imageWidth int, imageHeight in
 					needsRepeatingTexcoords := face.texIndexes[0] >= numNonrepeatingTexcoords
 
 					if needsRepeatingTexcoords == (writeRepeatingTexcoords != 0) {
-						var vf = face.VertexNumFace(fs.vertexes)
+						var vf = face.VertexNumFace(fs.vertexes, fs.texcoords)
 						printFaceLine(w, vf, -int(vc+1), -int(tc+1))
 						mf.faces = append(mf.faces, vf)
 						faceCount++
@@ -407,17 +407,17 @@ func (vs *Vertexes) Get(i int) int16 {
 	return (*vs)[i]
 }
 
-func (face *IndexFace) VertexNumFace(vs Vertexes) *VertexNumFace {
+func (face *IndexFace) VertexNumFace(vs Vertexes, tc TexCoords) *VertexNumFace {
 	return &VertexNumFace{[4]int{
 		int(vs.Get(face.indexes[0])),
 		int(vs.Get(face.indexes[1])),
 		int(vs.Get(face.indexes[2])),
 		int(vs.Get(face.indexes[3]))},
 		[4]int{
-			int(vs.Get(face.texIndexes[0])),
-			int(vs.Get(face.texIndexes[1])),
-			int(vs.Get(face.texIndexes[2])),
-			int(vs.Get(face.texIndexes[3]))},
+			int(tc.Get(face.texIndexes[0])),
+			int(tc.Get(face.texIndexes[1])),
+			int(tc.Get(face.texIndexes[2])),
+			int(tc.Get(face.texIndexes[3]))},
 		face.texIndexes[0] >= numNonrepeatingTexcoords}
 }
 
