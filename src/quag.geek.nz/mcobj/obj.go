@@ -771,13 +771,13 @@ func (fs *Faces) processBlocks(enclosedChunk *EnclosedChunk) {
 			}
 
 			if fs.boundary.IsBoundary(blockId, enclosedChunk.Get(x+1, y, z)) {
-				updateBlockRun(&r2, &blockRun{blockId, Vertex{x + 1, y, z}, Vertex{x + 1, y + 1, z}, Vertex{x + 1, y + 1, z + 1}, Vertex{x + 1, y, z + 1}, true})
+				updateBlockRun(&r2, &blockRun{blockId, Vertex{x + 1, y, z + 1}, Vertex{x + 1, y, z}, Vertex{x + 1, y + 1, z}, Vertex{x + 1, y + 1, z + 1}, true})
 			} else {
 				finishRun(r2)
 			}
 
 			if fs.boundary.IsBoundary(blockId, enclosedChunk.Get(x, y, z-1)) {
-				updateBlockRun(&r3, &blockRun{blockId, Vertex{x, y, z}, Vertex{x, y + 1, z}, Vertex{x + 1, y + 1, z}, Vertex{x + 1, y, z}, true})
+				updateBlockRun(&r3, &blockRun{blockId, Vertex{x + 1, y, z}, Vertex{x, y, z}, Vertex{x, y + 1, z}, Vertex{x + 1, y + 1, z}, true})
 			} else {
 				finishRun(r3)
 			}
