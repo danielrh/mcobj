@@ -51,28 +51,33 @@ func (o *ObjGenerator) Start(outFilename string, total int, maxProcs int, bounda
 	}
 
 	go func() {
+		lastMTL := ""
 		var chunkCount = 0
 		var size = 0
 		var vBase = 0
 		var vtBase = 0
+		
 		for {
 			var job = <-o.writeFacesChan
 			chunkCount++
 			o.out.Write(job.b.buf)
 			o.out.Flush()
-
+			
 			if obj3dsmax {
 				o.vout.Write(job.vb.buf)
 				o.vout.Flush()
 
 				for _, mtl := range job.mtls {
 					wroteRepeatingTexcoords := false
-					printMtl(o.fout, mtl.blockId, wroteRepeatingTexcoords)
+					first:=true
 					for _, face := range mtl.faces {
 						writingRepeatingTexcoords := face.repeating
-
-						if writingRepeatingTexcoords != wroteRepeatingTexcoords {
-							printMtl(o.fout, mtl.blockId, writingRepeatingTexcoords)
+						
+						if first || writingRepeatingTexcoords != wroteRepeatingTexcoords {
+							first=false;
+							if lastMTL != getMtlName(mtl.blockId, writingRepeatingTexcoords) {
+								lastMTL = printMtl(o.fout, mtl.blockId, writingRepeatingTexcoords)
+							}
 							wroteRepeatingTexcoords = writingRepeatingTexcoords
 						}
 						printFaceLine(o.fout, face, vBase, vtBase)
@@ -331,6 +336,7 @@ func (fs *Faces) AddFace(blockId uint16, v1, v2, v3, v4 Vertex) {
 }
 
 func (fs *Faces) Write(w io.Writer, vw io.Writer, imageWidth int, imageHeight int) (vCount, vtCount int, mtls []*MtlFaces) {
+	lastMTL := ""
 	fs.vertexes.Number()
 	mw := io.MultiWriter(w, vw)
 	var vc = int16(fs.vertexes.Print(mw, fs.xPos, fs.zPos))
@@ -351,7 +357,6 @@ func (fs *Faces) Write(w io.Writer, vw io.Writer, imageWidth int, imageHeight in
 		}
 	}
 	var mfs = make([]*MtlFaces, 0, len(blockIds))
-	lastMTL := ""
 	for writeRepeatingTexcoords := 0; writeRepeatingTexcoords < 2; writeRepeatingTexcoords++ {
 		for _, blockId := range blockIds {
 			if lastMTL != getMtlName(blockId, writeRepeatingTexcoords != 0) {

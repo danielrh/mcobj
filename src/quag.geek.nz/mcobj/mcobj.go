@@ -23,6 +23,8 @@ var (
 	hideBottom bool
 	noColor    bool
 
+	useTextures    bool
+
 	faceCount int
 	faceLimit int
 
@@ -54,7 +56,7 @@ func main() {
 	flag.BoolVar(&solidSides, "sides", false, "Solid sides, rather than showing underground")
 	flag.BoolVar(&blockFaces, "bf", false, "Don't combine adjacent faces of the same block within a column")
 	flag.BoolVar(&hideBottom, "hb", false, "Hide bottom of world")
-	flag.BoolVar(&noColor, "g", false, "Omit materials")
+	flag.BoolVar(&noColor, "g", true, "Omit materials")
 	flag.Float64Var(&bx, "x", 0, "Center x coordinate in blocks")
 	flag.Float64Var(&bz, "z", 0, "Center z coordinate in blocks")
 	flag.IntVar(&cx, "cx", 0, "Center x coordinate in chunks")
@@ -65,6 +67,7 @@ func main() {
 	flag.IntVar(&faceLimit, "fk", math.MaxInt32, "Face limit (thousands of faces)")
 	flag.BoolVar(&prt, "prt", false, "Write out PRT file instead of Obj file")
 	flag.BoolVar(&obj3dsmax, "3dsmax", true, "Create .obj file compatible with 3dsMax")
+	flag.BoolVar(&useTextures, "textures", true, "Create output with texture coordinates")
 	flag.BoolVar(&mtlNumber, "mtlnum", false, "Number materials instead of using names")
 	var showHelp = flag.Bool("h", false, "Show Help")
 	flag.Parse()

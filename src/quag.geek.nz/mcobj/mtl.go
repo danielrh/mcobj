@@ -4,33 +4,42 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"unicode"
+	"strings"
 )
 
 func getMtlName(blockId uint16, repeating bool) (retval string) {
-	if !noColor {
-		if repeating {
-			retval = "repeating_" + MaterialNamer.NameBlockId(blockId)
-		} else {
-			retval = MaterialNamer.NameBlockId(blockId)
-		}
-	} else {
+	if useTextures==false && noColor==true {
 		retval = ""
+	} else if noColor {
+		placeholder := RepetitionBlockIdNamer{};
+		retval = placeholder.NameBlockId(blockId, repeating);
+	} else {
+		retval = MaterialNamer.NameBlockId(blockId,repeating)
 	}
 	return
 }
 
 func printMtl(w io.Writer, blockId uint16, repeating bool) (retval string) {
-	if !noColor {
+	if useTextures==false&&noColor==true {
+		retval = ""
+	} else {
 		retval = getMtlName(blockId, repeating)
 		fmt.Fprintln(w, "usemtl "+retval)
-	} else {
-		retval = ""
 	}
 	return
 }
-
+func returnAlphaNum(rune int) int {
+	if unicode.IsLetter(rune) || unicode.IsDigit(rune) {
+		return rune;
+	}
+	return -1;
+}
+func RepeatingMaterialName(textureName string) string {
+	return strings.Map(returnAlphaNum,textureName);
+}
 func writeMtlFile(filename string) os.Error {
-	if noColor {
+	if noColor && useTextures==false{
 		return nil
 	}
 
@@ -39,12 +48,16 @@ func writeMtlFile(filename string) os.Error {
 		return outErr
 	}
 	defer outFile.Close()
+	repeatingTextures := make (map [string]bool);
 	for _, blockType := range blockTypeMap {
 		for _, color := range blockType.colors {
-			color.Print(outFile)
+			repeatingTextures [color.Print(outFile)]=true
 		}
 	}
-
+	fmt.Fprintf(outFile,"newmtl %s\nmap_Kd terrain.png\n\n", "Default")
+	for repeatingTexture,_ := range repeatingTextures {
+		fmt.Fprintf(outFile,"newmtl %s\nmap_Kd %s\n\n", RepeatingMaterialName(repeatingTexture), repeatingTexture)
+	}
 	return nil
 }
 
@@ -125,7 +138,7 @@ type MTL struct {
 	botTex               TexCoord
 }
 
-func (mtl *MTL) Print(w io.Writer) {
+func (mtl *MTL) Print(w io.Writer) (repeating_texturename string){
 	var (
 		r = mtl.color >> 24
 		g = mtl.color >> 16 & 0xff
@@ -133,9 +146,16 @@ func (mtl *MTL) Print(w io.Writer) {
 		a = mtl.color & 0xff
 	)
 
-	fmt.Fprintf(w, "# %s\nnewmtl %s\nKd %.4f %.4f %.4f\nd %.4f\nillum 1\nmap_Kd terrain.png\n\n", mtl.name, MaterialNamer.NameBlockId(uint16(mtl.blockId)+uint16(mtl.metadata)*256), float64(r)/255, float64(g)/255, float64(b)/255, float64(a)/255)
-	fmt.Fprintf(w, "# %s\nnewmtl repeating_%s\nKd %.4f %.4f %.4f\nd %.4f\nillum 1\nmap_Kd %s\n\n", mtl.name, MaterialNamer.NameBlockId(uint16(mtl.blockId)+uint16(mtl.metadata)*256), float64(r)/255, float64(g)/255, float64(b)/255, float64(a)/255, mtl.repeatingTextureName)
-
+	fmt.Fprintf(w, "# %s\nnewmtl %s\nKd %.4f %.4f %.4f\nd %.4f\nillum 1\n", mtl.name, MaterialNamer.NameBlockId(uint16(mtl.blockId)+uint16(mtl.metadata)*256,false), float64(r)/255, float64(g)/255, float64(b)/255, float64(a)/255)
+	if useTextures {
+		fmt.Fprintf(w,"map_Kd terrain.png\n\n");
+	}
+	fmt.Fprintf(w, "# %s\nnewmtl %s\nKd %.4f %.4f %.4f\nd %.4f\nillum 1\n",mtl.name, MaterialNamer.NameBlockId(uint16(mtl.blockId)+uint16(mtl.metadata)*256,true), float64(r)/255, float64(g)/255, float64(b)/255, float64(a)/255);
+	if useTextures {
+																																																								  fmt.Fprintf(w,"map_Kd %s\n\n", mtl.repeatingTextureName);
+}
+	repeating_texturename=mtl.repeatingTextureName;
+	return;
 }
 
 func (mtl *MTL) colorId() uint16 {
@@ -151,20 +171,46 @@ var (
 )
 
 type BlockIdNamer interface {
-	NameBlockId(blockId uint16) string
+	NameBlockId(blockId uint16, repeating bool) string
 }
+
+type RepetitionBlockIdNamer struct{}
+func (n *RepetitionBlockIdNamer) NameBlockId(blockId uint16, repeating bool) (name string) {
+	var idByte = byte(blockId & 0xff)
+	name = "Default";
+	if !repeating {
+		return;
+	}
+
+	if blockType, ok := blockTypeMap[idByte]; ok {
+		for i, mtl := range blockType.colors {
+			if i == 0 || mtl.metadata == uint8(blockId>>8) {
+				name = RepeatingMaterialName(mtl.repeatingTextureName);
+			}
+			if mtl.metadata == uint8(blockId>>8) {
+				return
+			}
+		}
+	}
+	return
+}
+
 
 type NumberBlockIdNamer struct{}
 
-func (n *NumberBlockIdNamer) NameBlockId(blockId uint16) (name string) {
+func (n *NumberBlockIdNamer) NameBlockId(blockId uint16, repeating bool) (name string) {
 	var idByte = byte(blockId & 0xff)
-	name = fmt.Sprintf("%d", idByte)
+	repeatingstr :=""
+	if repeating {
+		repeatingstr="repeating_"
+	}
+	name = fmt.Sprintf("%s%d", repeatingstr,idByte)
 	defaultName := name
 
 	if blockType, ok := blockTypeMap[idByte]; ok {
 		for i, mtl := range blockType.colors {
 			if i == 0 || mtl.metadata == uint8(blockId>>8) {
-				name = fmt.Sprintf("%d_%d", idByte, (blockId >> 8))
+				name = fmt.Sprintf("%%sd_%d", repeatingstr, idByte, (blockId >> 8))
 			}
 			if mtl.metadata == uint8(blockId>>8) {
 				return
@@ -179,13 +225,18 @@ func (n *NumberBlockIdNamer) NameBlockId(blockId uint16) (name string) {
 
 type NameBlockIdNamer struct{}
 
-func (n *NameBlockIdNamer) NameBlockId(blockId uint16) (name string) {
+func (n *NameBlockIdNamer) NameBlockId(blockId uint16, repeating bool) (name string) {
+	repeatingstr :=""
+	if repeating {
+		repeatingstr="repeating_"
+	}
+
 	var idByte = byte(blockId & 0xff)
-	name = fmt.Sprintf("Unknown.%d", idByte)
+	name = fmt.Sprintf("%sUnknown.%d", repeatingstr, idByte)
 	if blockType, ok := blockTypeMap[idByte]; ok {
 		for i, color := range blockType.colors {
 			if i == 0 || color.blockId == idByte && (color.metadata == 255 || color.metadata == uint8(blockId>>8)) {
-				name = color.name
+				name = repeatingstr+color.name
 			}
 			if color.blockId == idByte && color.metadata == uint8(blockId>>8) {
 				return
